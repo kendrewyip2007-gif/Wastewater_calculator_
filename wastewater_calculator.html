@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WaterCalc — Treatment Efficiency Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0f1e;
+    --bg2: #111827;
+    --bg3: #1a2236;
+    --accent: #00e5c0;
+    --accent2: #0077ff;
+    --danger: #ff4d6d;
+    --success: #00e5c0;
+    --warn: #ffd166;
+    --text: #e8edf5;
+    --muted: #7a8ba8;
+    --border: rgba(255,255,255,0.08);
+    --mono: 'Space Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,192,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,192,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; position: relative; z-index: 1; }
+
+  /* HEADER */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 1.25rem 0;
+    position: sticky;
+    top: 0;
+    background: rgba(10,15,30,0.92);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+  header .inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+  .logo {
+    font-family: var(--mono);
+    font-size: 16px;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+  .header-nav { display: flex; gap: 6px; }
+  .nav-btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 5px 14px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .nav-btn:hover, .nav-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,229,192,0.06);
+  }
+
+  /* HERO */
+  .hero {
+    padding: 4rem 0 3rem;
+    text-align: center;
+  }
+  .hero-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    border: 1px solid rgba(0,229,192,0.3);
+    padding: 4px 14px;
+    border-radius: 2px;
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.1em;
+  }
+  .hero h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 600;
+    line-height: 1.15;
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+  }
+  .hero h1 span { color: var(--accent); }
+  .hero p {
+    color: var(--muted);
+    font-size: 16px;
+    max-width: 520px;
+    margin: 0 auto 2rem;
+  }
+
+  /* TABS */
+  .tab-bar {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2rem;
+    overflow-x: auto;
+    padding-bottom: 0;
+    scrollbar-width: none;
+  }
+  .tab-bar::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 10px 20px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+    letter-spacing: 0.05em;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* CARDS */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .card-title {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title::before {
+    content: '';
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  /* TABLES */
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-align: right;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+  th:first-child { text-align: left; }
+  td {
+    padding: 8px 10px;
+    text-align: right;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  td:first-child { text-align: left; font-weight: 500; font-size: 13px; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  /* INPUTS */
+  input[type=number], input[type=text] {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input[type=number] { width: 90px; text-align: right; }
+  input[type=text] { width: 180px; }
+  input:focus { border-color: var(--accent); }
+  input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  /* BADGES */
+  .badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 2px;
+    letter-spacing: 0.04em;
+  }
+  .badge-pass { background: rgba(0,229,192,0.12); color: var(--success); border: 1px solid rgba(0,229,192,0.3); }
+  .badge-fail { background: rgba(255,77,109,0.12); color: var(--danger); border: 1px solid rgba(255,77,109,0.3); }
+
+  /* METRICS GRID */
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 1rem; }
+  .metric {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+  }
+  .metric-label { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 0.06em; margin-bottom: 6px; }
+  .metric-val { font-family: var(--mono); font-size: 22px; color: var(--accent); font-weight: 700; }
+  .metric-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* BUTTONS */
+  .btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 7px 16px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.04em;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,229,192,0.06); }
+  .btn-primary {
+    background: var(--accent);
+    color: #0a0f1e;
+    border-color: var(--accent);
+    font-weight: 700;
+  }
+  .btn-primary:hover { background: #00c9aa; border-color: #00c9aa; color: #0a0f1e; }
+  .btn-danger { color: var(--danger); }
+  .btn-danger:hover { border-color: var(--danger); background: rgba(255,77,109,0.06); }
+
+  .row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+  .row label { font-family: var(--mono); font-size: 11px; color: var(--muted); min-width: 70px; }
+
+  /* Stage name row */
+  .stage-row {
+    display: flex; align-items: center; gap: 10px; padding: 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px;
+  }
+  .stage-num {
+    font-family: var(--mono); font-size: 11px; color: var(--accent);
+    min-width: 60px;
+  }
+
+  /* PROGRESS BAR */
+  .progress-wrap { height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; margin-top: 4px; }
+  .progress-bar { height: 100%; border-radius: 2px; background: var(--accent); transition: width 0.4s ease; }
+
+  /* TAB PANELS */
+  .tab-panel { display: none; animation: fadeIn 0.2s ease; }
+  .tab-panel.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  /* FOOTER */
+  footer {
+    margin-top: 4rem;
+    padding: 2rem 0;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 600px) {
+    .hero h1 { font-size: 1.8rem; }
+    input[type=number] { width: 72px; }
+    input[type=text] { width: 140px; }
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="inner">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      WATERCALC
+    </div>
+    <div class="header-nav">
+      <button class="nav-btn active" onclick="scrollToCalc()">Calculator</button>
+      <button class="nav-btn" onclick="resetAll()">Reset</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="container">
+    <div class="hero">
+      <div class="hero-tag">WASTEWATER TREATMENT SYSTEM</div>
+      <h1>Treatment Efficiency<br><span>Calculator</span></h1>
+      <p>Input influent values, configure removal efficiencies per stage, and evaluate effluent against discharge standards.</p>
+    </div>
+
+    <div id="calc">
+      <div class="tab-bar" id="tabBar"></div>
+      <div id="tabContent"></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    WATERCALC &mdash; Wastewater Treatment Efficiency Tool &mdash; Built for s_ichineer
+  </div>
+</footer>
+
+<script>
+const PARAMS = ['BOD','TSS','Ammonia','Nitrate','Phosphate','Total Coliform'];
+const UNITS  = {BOD:'mg/L',TSS:'mg/L',Ammonia:'mg/L',Nitrate:'mg/L',Phosphate:'mg/L','Total Coliform':'MPN/100mL'};
+
+let state = {
+  activeTab: 0,
+  influent: {BOD:43050, TSS:278.45, Ammonia:275.35, Nitrate:8.70, Phosphate:78.41, 'Total Coliform':2000000},
+  standards: {BOD:50, TSS:50, Ammonia:10, Nitrate:20, Phosphate:5, 'Total Coliform':1000},
+  processes: [
+    {name:'Upflow Anaerobic Filter', re:{BOD:90,TSS:90,Ammonia:60.55,Nitrate:0,Phosphate:0,'Total Coliform':99}},
+    {name:'Wet Nitrifier',           re:{BOD:95,TSS:95,Ammonia:90,Nitrate:38.8,Phosphate:68.5,'Total Coliform':95}},
+    {name:'Zeolite Media',           re:{BOD:95,TSS:95,Ammonia:75,Nitrate:90,Phosphate:0,'Total Coliform':0}},
+    {name:'HSF Constructed Wetland', re:{BOD:90,TSS:95,Ammonia:0,Nitrate:0,Phosphate:0,'Total Coliform':0}},
+  ]
+};
+
+function calcResults() {
+  let r = [{...state.influent}];
+  for (let p of state.processes) {
+    let prev = r[r.length-1], eff={};
+    for (let param of PARAMS) eff[param] = prev[param]*(1-(p.re[param]||0)/100);
+    r.push(eff);
+  }
+  return r;
+}
+
+function fmt(v) {
+  if (v===undefined||isNaN(v)) return '—';
+  if (v>=1e6) return (v/1e6).toFixed(3)+'M';
+  if (v>=1000) return v.toLocaleString(undefined,{maximumFractionDigits:2});
+  return v.toLocaleString(undefined,{maximumFractionDigits:2});
+}
+
+function pct(v) { return isNaN(v)?'—':v.toFixed(1)+'%'; }
+
+function renderTabs() {
+  const bar = document.getElementById('tabBar');
+  const tabs = ['SETUP', ...state.processes.map((_,i)=>`STAGE ${i+1}`), 'SUMMARY'];
+  bar.innerHTML = tabs.map((t,i)=>`<button class="tab-btn${state.activeTab===i?' active':''}" onclick="switchTab(${i})">${t}</button>`).join('');
+}
+
+function switchTab(i) {
+  state.activeTab = i;
+  renderTabs();
+  renderContent();
+}
+
+function renderContent() {
+  const total = state.processes.length + 2;
+  const el = document.getElementById('tabContent');
+  if (state.activeTab === 0) el.innerHTML = renderSetup();
+  else if (state.activeTab === total-1) el.innerHTML = renderSummary();
+  else el.innerHTML = renderStage(state.activeTab - 1);
+}
+
+function renderSetup() {
+  let html = `<div class="card">
+    <div class="card-title">INFLUENT PARAMETERS</div>
+    <table>
+      <thead><tr><th>PARAMETER</th><th>INFLUENT VALUE</th><th>UNIT</th><th>DISCHARGE STANDARD</th></tr></thead>
+      <tbody>`;
+  for (let p of PARAMS) {
+    html += `<tr>
+      <td>${p}</td>
+      <td><input type="number" step="any" value="${state.influent[p]}" onchange="state.influent['${p}']=+this.value;renderContent()"></td>
+      <td style="color:var(--muted);font-family:var(--mono);font-size:11px">${UNITS[p]}</td>
+      <td><input type="number" step="any" value="${state.standards[p]}" onchange="state.standards['${p}']=+this.value;renderContent()"></td>
+    </tr>`;
+  }
+  html += `</tbody></table></div>`;
+
+  html += `<div class="card"><div class="card-title">TREATMENT STAGES</div>`;
+  state.processes.forEach((proc,i) => {
+    html += `<div class="stage-row">
+      <span class="stage-num">STAGE ${i+1}</span>
+      <input type="text" value="${proc.name}" onchange="state.processes[${i}].name=this.value;renderTabs();renderContent()">
+      <button class="btn btn-danger" onclick="removeStage(${i})">REMOVE</button>
+    </div>`;
+  });
+  html += `<button class="btn" onclick="addStage()" style="margin-top:6px">+ ADD STAGE</button></div>`;
+  return html;
+}
+
+function renderStage(idx) {
+  const proc = state.processes[idx];
+  const results = calcResults();
+  const inf = results[idx], eff = results[idx+1];
+  const passCount = PARAMS.filter(p=>eff[p]<=state.standards[p]).length;
+
+  let html = `<div class="metrics">
+    <div class="metric"><div class="metric-label">PASSING</div><div class="metric-val">${passCount}/${PARAMS.length}</div><div class="metric-sub">parameters</div></div>`;
+  for (let p of PARAMS) {
+    const re = inf[p]>0?((inf[p]-eff[p])/inf[p]*100):0;
+    html += `<div class="metric"><div class="metric-label">${p.toUpperCase()}</div><div class="metric-val">${re.toFixed(0)}%</div><div class="metric-sub">removed</div></div>`;
+  }
+  html += `</div>`;
+
+  html += `<div class="card"><div class="card-title">${proc.name.toUpperCase()} — REMOVAL EFFICIENCIES</div>
+    <table><thead><tr><th>PARAMETER</th><th>INFLUENT</th><th>% RE</th><th>EFFLUENT</th><th>STD</th><th>STATUS</th></tr></thead><tbody>`;
+  for (let p of PARAMS) {
+    const effVal = eff[p], std = state.standards[p], pass = effVal<=std;
+    const re = (proc.re[p]||0);
+    const barW = Math.min(100, re);
+    html += `<tr>
+      <td>${p}</td>
+      <td style="font-family:var(--mono);font-size:12px">${fmt(inf[p])}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="number" min="0" max="100" step="0.01" value="${re}" onchange="state.processes[${idx}].re['${p}']=+this.value;renderContent()" style="width:70px">
+          <div style="flex:1;min-width:50px"><div class="progress-wrap"><div class="progress-bar" style="width:${barW}%"></div></div></div>
+        </div>
+      </td>
+      <td style="font-family:var(--mono);font-size:12px">${fmt(effVal)}</td>
+      <td style="font-family:var(--mono);font-size:12px;color:var(--muted)">${fmt(std)}</td>
+      <td><span class="badge ${pass?'badge-pass':'badge-fail'}">${pass?'PASS':'FAIL'}</span></td>
+    </tr>`;
+  }
+  html += `</tbody></table></div>`;
+  return html;
+}
+
+function renderSummary() {
+  const results = calcResults();
+  const initial = results[0], final = results[results.length-1];
+  const passCount = PARAMS.filter(p=>final[p]<=state.standards[p]).length;
+  const pctPass = (passCount/PARAMS.length*100).toFixed(0);
+
+  let html = `<div class="metrics">
+    <div class="metric"><div class="metric-label">OVERALL PASS RATE</div><div class="metric-val">${pctPass}%</div><div class="metric-sub">${passCount} of ${PARAMS.length} params</div></div>
+    <div class="metric"><div class="metric-label">STAGES</div><div class="metric-val">${state.processes.length}</div><div class="metric-sub">treatment processes</div></div>
+    <div class="metric"><div class="metric-label">BOD REMOVAL</div><div class="metric-val">${initial.BOD>0?((initial.BOD-final.BOD)/initial.BOD*100).toFixed(1):0}%</div><div class="metric-sub">overall</div></div>
+    <div class="metric"><div class="metric-label">COLIFORM REMOVAL</div><div class="metric-val">${initial['Total Coliform']>0?((initial['Total Coliform']-final['Total Coliform'])/initial['Total Coliform']*100).toFixed(2):0}%</div><div class="metric-sub">overall</div></div>
+  </div>`;
+
+  html += `<div class="card"><div class="card-title">FULL TREATMENT TRAIN</div>
+    <div style="overflow-x:auto"><table><thead><tr>
+      <th>PARAMETER</th><th>INFLUENT</th>`;
+  state.processes.forEach((p,i)=>{ html += `<th>AFTER STAGE ${i+1}</th>`; });
+  html += `<th>STANDARD</th><th>TOTAL RE</th><th>RESULT</th></tr></thead><tbody>`;
+
+  for (let p of PARAMS) {
+    const finalVal = final[p], std = state.standards[p], pass = finalVal<=std;
+    const totalRe = initial[p]>0?((initial[p]-finalVal)/initial[p]*100):0;
+    html += `<tr><td>${p}</td><td style="font-family:var(--mono);font-size:12px">${fmt(initial[p])}</td>`;
+    for (let i=1;i<results.length;i++) {
+      html += `<td style="font-family:var(--mono);font-size:12px">${fmt(results[i][p])}</td>`;
+    }
+    html += `<td style="font-family:var(--mono);font-size:12px;color:var(--muted)">${fmt(std)}</td>
+      <td style="font-family:var(--mono);font-size:12px;color:var(--accent)">${pct(totalRe)}</td>
+      <td><span class="badge ${pass?'badge-pass':'badge-fail'}">${pass?'PASS':'FAIL'}</span></td>
+    </tr>`;
+  }
+  html += `</tbody></table></div></div>`;
+  return html;
+}
+
+function addStage() {
+  state.processes.push({name:`New Stage ${state.processes.length+1}`, re:{BOD:0,TSS:0,Ammonia:0,Nitrate:0,Phosphate:0,'Total Coliform':0}});
+  renderTabs(); renderContent();
+}
+
+function removeStage(i) {
+  state.processes.splice(i,1);
+  if (state.activeTab > state.processes.length) state.activeTab = 0;
+  renderTabs(); renderContent();
+}
+
+function resetAll() {
+  if (!confirm('Reset all values to defaults?')) return;
+  state = {
+    activeTab:0,
+    influent:{BOD:43050,TSS:278.45,Ammonia:275.35,Nitrate:8.70,Phosphate:78.41,'Total Coliform':2000000},
+    standards:{BOD:50,TSS:50,Ammonia:10,Nitrate:20,Phosphate:5,'Total Coliform':1000},
+    processes:[
+      {name:'Upflow Anaerobic Filter',re:{BOD:90,TSS:90,Ammonia:60.55,Nitrate:0,Phosphate:0,'Total Coliform':99}},
+      {name:'Wet Nitrifier',          re:{BOD:95,TSS:95,Ammonia:90,Nitrate:38.8,Phosphate:68.5,'Total Coliform':95}},
+      {name:'Zeolite Media',          re:{BOD:95,TSS:95,Ammonia:75,Nitrate:90,Phosphate:0,'Total Coliform':0}},
+      {name:'HSF Constructed Wetland',re:{BOD:90,TSS:95,Ammonia:0,Nitrate:0,Phosphate:0,'Total Coliform':0}},
+    ]
+  };
+  renderTabs(); renderContent();
+}
+
+function scrollToCalc() {
+  document.getElementById('calc').scrollIntoView({behavior:'smooth'});
+}
+
+renderTabs();
+renderContent();
+</script>
+</body>
+</html>
